@@ -6,9 +6,7 @@
     "name": "fRevoke",
     "homeUrl": "https://frevoke.vercel.app",
     "iconUrl": "https://frevoke.vercel.app/logo.png",
-    "splashImageUrl": "https://frevoke.vercel.app/logo.png",
-    "privacyPolicyUrl": "https://frevoke.vercel.app/privacy",
-    "termsOfServiceUrl": "https://frevoke.vercel.app/terms"
+    "splashImageUrl": "https://frevoke.vercel.app/splash.png"
   },
   "capabilities": {
     "wallet": true,

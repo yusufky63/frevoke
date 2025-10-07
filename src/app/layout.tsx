@@ -52,7 +52,7 @@ export const metadata: Metadata = {
           type: "launch_miniapp",
           name: "fRevoke",
           url: "https://frevoke.vercel.app",
-          splashImageUrl: "https://frevoke.vercel.app/logo.png",
+          splashImageUrl: "https://frevoke.vercel.app/splash.png",
           splashBackgroundColor: "#6F3CC2"
         }
       }
