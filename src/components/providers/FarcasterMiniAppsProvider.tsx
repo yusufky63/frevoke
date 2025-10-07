@@ -3,22 +3,18 @@
 import { useEffect } from 'react'
 import { sdk } from '@farcaster/miniapp-sdk'
 
-// Minimal provider to signal Farcaster Mini Apps SDK readiness
+// Farcaster Mini Apps SDK readiness - dokümantasyona göre
 export function FarcasterMiniAppsProvider() {
   useEffect(() => {
-    const sendReady = async () => {
-      try {
-        // Resmi Farcaster Mini Apps SDK - dokümantasyona göre
-        console.log('Calling sdk.actions.ready() - Official Farcaster SDK')
-        await sdk.actions.ready()
+    // Call ready as soon as possible while avoiding jitter and content reflows
+    // Dokümantasyona göre: "You should call ready as soon as possible while avoiding jitter and content reflows"
+    sdk.actions.ready()
+      .then(() => {
         console.log('✅ Farcaster SDK ready() called successfully')
-      } catch (error) {
+      })
+      .catch((error) => {
         console.warn('Farcaster SDK ready signal failed:', error)
-      }
-    }
-
-    // Call ready immediately as per Farcaster documentation
-    setTimeout(() => sendReady(), 100)
+      })
   }, [])
 
   return null

@@ -6,7 +6,6 @@ import { useApprovalsAlchemy } from "@/hooks/useApprovalsAlchemy";
 import { useRevoke } from "@/hooks/useRevoke";
 import type { Approval } from "@/lib/types";
 import { ConnectButton } from "@/components/ConnectButton";
-import { RevokeButton } from "@/components/RevokeButton";
 import { TransactionStatus } from "@/components/TransactionStatus";
 import { BatchOperations } from "@/components/BatchOperations";
 import { WalletChainSelector } from "@/components/WalletChainSelector";
@@ -39,7 +38,6 @@ export default function HomePage() {
   // Pagination calculations will be moved after filteredApprovals is set
   const [selectedChainId, setSelectedChainId] = useState<number>(8453); // Default to Base
   const currentChainId = useChainId();
-  const chainMismatch = !!currentChainId && selectedChainId !== currentChainId;
 
   // Auto switch chain function
   const autoSwitchChain = useCallback(
@@ -287,6 +285,7 @@ Using @fRevoke to keep my crypto safe 🛡️
     }
   };
 
+
   // Auto add Mini App on page load
   useEffect(() => {
     const autoAddMiniApp = async () => {
@@ -506,15 +505,15 @@ Using @fRevoke to keep my crypto safe 🛡️
         <div className="p-2">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center">
+            <div className="flex items-center ">
               <Image
-                src="/logo.png"
+                src="/icon.png"
                 alt="Revoke Mini"
-                width={24}
-                height={24}
-                className="w-6 h-6 rounded-full"
+                width={28}
+                height={28}
+                className="w-8 h-8 rounded-full"
               />
-              <span className="text-sm text-[#6F3CC2] font-extrabold tracking-wide ml-1">
+              <span className="text-lg text-[#4831c9] font-extrabold tracking-wide ml-1 ">
                 fRevoke
               </span>
             </div>
@@ -589,7 +588,30 @@ Using @fRevoke to keep my crypto safe 🛡️
           <BatchOperations
             selectedApprovals={selectedApprovals}
             approvals={approvals || []}
-            onBatchRevoke={revoke}
+            onBatchRevoke={async (selectedApprovalObjects) => {
+              try {
+                console.log(
+                  `Revoking ${selectedApprovalObjects.length} approvals on chain ${selectedChainId}`
+                );
+                
+                // Store revoke count and chain for sharing (only for actual revoke operations)
+                setLastRevokeCount(selectedApprovalObjects.length);
+                setLastRevokeChain(getChainName(selectedChainId));
+                
+                await revoke(selectedApprovalObjects);
+
+                // Refresh approvals after successful revoke
+                if (status?.status === "CONFIRMED") {
+                  setTimeout(() => {
+                    refetch();
+                    setSelectedApprovals([]);
+                  }, 2000);
+                }
+              } catch (error) {
+                console.error("Revoke error:", error);
+                // Error is already handled in useRevoke hook
+              }
+            }}
             isRevoking={isRevoking}
           />
         )}
@@ -654,46 +676,6 @@ Using @fRevoke to keep my crypto safe 🛡️
           </>
         )}
 
-        {/* Revoke Button */}
-        {isWalletConnected &&
-          !chainMismatch &&
-          (selectedApprovals?.length || 0) > 0 && (
-            <div className="mt-4">
-              <RevokeButton
-                selectedApprovals={selectedApprovals}
-                onRevoke={async (selectedIds) => {
-                  try {
-                    // Convert selected IDs to Approval objects
-                    const selectedApprovalObjects = (approvals || []).filter(
-                      (approval) => selectedIds.includes(approval.id)
-                    );
-
-                    console.log(
-                      `Revoking ${selectedApprovalObjects.length} approvals on chain ${selectedChainId}`
-                    );
-                    
-                    // Store revoke count and chain for sharing (only for actual revoke operations)
-                    setLastRevokeCount(selectedApprovalObjects.length);
-                    setLastRevokeChain(getChainName(selectedChainId));
-                    
-                    await revoke(selectedApprovalObjects);
-
-                    // Refresh approvals after successful revoke
-                    if (status?.status === "CONFIRMED") {
-                      setTimeout(() => {
-                        refetch();
-                        setSelectedApprovals([]);
-                      }, 2000);
-                    }
-                  } catch (error) {
-                    console.error("Revoke error:", error);
-                    // Error is already handled in useRevoke hook
-                  }
-                }}
-                isRevoking={isRevoking}
-              />
-            </div>
-          )}
 
         {/* Transaction Status */}
         {status && (

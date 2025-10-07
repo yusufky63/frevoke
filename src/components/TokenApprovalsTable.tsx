@@ -125,7 +125,7 @@ export function TokenApprovalsTable({
                 placeholder="Search tokens, addresses..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 outline-none"
+                className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 dark:border-gray-800 rounded-lg bg-transparent text-gray-900 dark:text-gray-100 outline-none"
               />
               {searchTerm && (
                 <button

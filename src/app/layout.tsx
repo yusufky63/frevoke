@@ -44,8 +44,8 @@ export const metadata: Metadata = {
   },
   other: {
     "fc:miniapp": JSON.stringify({
-      version: "next",
-      imageUrl: "https://frevoke.vercel.app/logo.png",
+      version: "1",
+      imageUrl: "https://frevoke.vercel.app/og-image.png",
       button: {
         title: "Revoke Tokens",
         action: {

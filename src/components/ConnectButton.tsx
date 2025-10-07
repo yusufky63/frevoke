@@ -39,8 +39,7 @@ export function ConnectButton() {
 
   // Get primary connector
   const farcasterConnector = connectors.find(c => c.id === 'farcasterMiniApp')
-  const injectedConnector = connectors.find(c => c.id === 'injected')
-  const primaryConnector = farcasterConnector || injectedConnector
+  const primaryConnector = farcasterConnector
 
   return (
     <div className="flex flex-col items-stretch gap-2">
