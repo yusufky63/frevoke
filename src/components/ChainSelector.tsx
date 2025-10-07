@@ -76,11 +76,7 @@ export function ChainSelector({
 
       // Fallback to Wagmi if Farcaster fails
       try {
-        console.log("[ChainSelector] Trying Wagmi fallback...");
         await switchChain({ chainId });
-        console.log(
-          `[ChainSelector] Wagmi fallback successful for chain ${chainId}`
-        );
       } catch (wagmiError) {
         console.error(
           "[ChainSelector] Wagmi fallback also failed:",
@@ -130,9 +126,6 @@ export function ChainSelector({
       <button
         ref={buttonRef}
         onClick={() => {
-          console.log(
-            `[ChainSelector] Opening dropdown for chain ${selectedChainId}`
-          );
           setIsOpen(!isOpen);
         }}
         className="flex items-center gap-2 px-3 py-2 text-xs bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-300/50 dark:border-gray-600/50 rounded-lg hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-200"
@@ -179,9 +172,6 @@ export function ChainSelector({
                 <button
                   key={chain.id}
                   onClick={async () => {
-                    console.log(
-                      `[ChainSelector] Selected chain ${chain.id} (${chain.name})`
-                    );
 
                     // Update selected chain first
                     onChainChange(chain.id);

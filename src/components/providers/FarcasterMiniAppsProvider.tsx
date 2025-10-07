@@ -10,10 +10,8 @@ export function FarcasterMiniAppsProvider() {
     // Dokümantasyona göre: "You should call ready as soon as possible while avoiding jitter and content reflows"
     sdk.actions.ready()
       .then(() => {
-        console.log('✅ Farcaster SDK ready() called successfully')
       })
       .catch((error) => {
-        console.warn('Farcaster SDK ready signal failed:', error)
       })
   }, [])
 

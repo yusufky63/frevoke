@@ -9,9 +9,10 @@ import { useChainId } from 'wagmi'
 interface TransactionStatusProps {
   status: TxStatus
   transactionHash?: string
+  onToastShown?: () => void
 }
 
-export function TransactionStatus({ status, transactionHash }: TransactionStatusProps) {
+export function TransactionStatus({ status, transactionHash, onToastShown }: TransactionStatusProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
   const chainId = useChainId()
@@ -24,34 +25,33 @@ export function TransactionStatus({ status, transactionHash }: TransactionStatus
       return
     }
     
-    // Don't show CONFIRMED without transaction hash
-    if (status.status === 'CONFIRMED' && !status.hash && !transactionHash) {
+    // Show CONFIRMED even without transaction hash if we have a success message
+    if (status.status === 'CONFIRMED' && !status.message && !status.hash && !transactionHash) {
       setIsVisible(false)
       return
     }
 
-    // Only show toast for meaningful status changes:
-    // 1. PENDING with specific messages (chain switching, etc.) - NOT generic "Processing"
-    // 2. CONFIRMED with actual transaction hash
-    // 3. FAILED with actual errors (not just any error)
+    // Show toast for all meaningful status changes
     const shouldShowToast = 
-      (status.status === 'PENDING' && status.message && 
-       (status.message.includes('Switching to') || status.message.includes('chain'))) ||
-      (status.status === 'CONFIRMED' && (status.hash || transactionHash) && 
-       ((status.hash && status.hash.length > 10) || (transactionHash && transactionHash.length > 10))) ||
-      (status.status === 'FAILED' && status.error && 
-       !status.error.includes('User rejected') && !status.error.includes('cancelled'))
+      (status.status === 'PENDING' && status.message) ||
+      (status.status === 'CONFIRMED') ||
+      (status.status === 'FAILED' && status.error)
     
     if (shouldShowToast) {
       setIsAnimating(true)
       setIsVisible(true)
       
-      // Auto-hide success messages after 4 seconds
+      // Call callback when toast is shown
+      if (onToastShown) {
+        onToastShown();
+      }
+      
+      // Auto-hide success messages after 6 seconds (longer for success)
       if (status.status === 'CONFIRMED') {
         const timer = setTimeout(() => {
           setIsAnimating(false)
           setTimeout(() => setIsVisible(false), 300)
-        }, 4000)
+        }, 6000)
         return () => clearTimeout(timer)
       }
 
@@ -121,7 +121,7 @@ export function TransactionStatus({ status, transactionHash }: TransactionStatus
   const getStatusMessage = () => {
     switch (status.status) {
       case 'CONFIRMED':
-        return 'Approvals revoked'
+        return status.message || '🎉 Approvals revoked successfully! Your wallet is now more secure.'
       case 'FAILED':
         return status.error || 'Transaction failed'
       case 'PENDING':
@@ -137,8 +137,11 @@ export function TransactionStatus({ status, transactionHash }: TransactionStatus
         className={`
           transform transition-all duration-300 ease-in-out
           ${isAnimating ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
-          bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 
-          rounded-xl shadow-xl backdrop-blur-sm p-4
+          ${status.status === 'CONFIRMED' 
+            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+          }
+          border rounded-xl shadow-xl backdrop-blur-sm p-4
         `}
       >
         <div className="flex items-start gap-3">
@@ -169,17 +172,22 @@ export function TransactionStatus({ status, transactionHash }: TransactionStatus
             
             {(status.hash || transactionHash) && (
               <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                <a
-                  href={`${getExplorerUrl(chainId)}/tx/${status.hash || transactionHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-mono transition-colors"
-                >
-                  <span>View on Explorer</span>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                    {`${(status.hash || transactionHash)?.slice(0, 6)}...${(status.hash || transactionHash)?.slice(-4)}`}
+                  </div>
+                  <a
+                    href={`${getExplorerUrl(chainId)}/tx/${status.hash || transactionHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-mono transition-colors"
+                  >
+                    <span>View</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
               </div>
             )}
           </div>

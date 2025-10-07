@@ -13,9 +13,7 @@ export function signalMiniAppReady() {
   try {
     // Resmi Farcaster Mini Apps SDK - dokümantasyona göre
     sdk.actions.ready()
-    console.log('✅ Farcaster SDK ready() called successfully')
   } catch (error) {
-    console.warn('Failed to call ready() on Farcaster SDK:', error)
   }
 }
 

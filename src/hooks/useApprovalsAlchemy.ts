@@ -1,25 +1,18 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { getCurrentApprovalsOnly } from '@/lib/alchemy'
 import { getApprovalsFromMoralis, isMoralisSupportedChain } from '@/lib/moralis'
 import type { Approval } from '@/lib/types'
 
-// Simple in-memory cache
-const cache = new Map<string, { data: Approval[], timestamp: number }>()
-const CACHE_TTL = 10 * 60 * 1000 // 10 dakika (daha uzun cache)
+// No cache - always fetch fresh data
 
 interface UseApprovalsAlchemyReturn {
   approvals: Approval[]
   loading: boolean
   error: string | null
   refetch: () => void
-  cacheStats: {
-    size: number
-    age: number | null
-    isValid: boolean
-  }
 }
 
 export function useApprovalsAlchemy(chainId: number): UseApprovalsAlchemyReturn {
@@ -44,14 +37,7 @@ export function useApprovalsAlchemy(chainId: number): UseApprovalsAlchemyReturn 
     // Determine provider (prefer Moralis when available + supported)
     const preferMoralis = isMoralisSupportedChain(chainId) && !!process.env.NEXT_PUBLIC_MORALIS_API_KEY
 
-    // Check cache first (include provider in key)
-    const cacheKey = `${address}-${chainId}-${preferMoralis ? 'moralis' : 'alchemy'}`
-    const cached = cache.get(cacheKey)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log('[OptimizedApprovals] Using cached data')
-      setApprovals(cached.data)
-      return
-    }
+    // Always fetch fresh data - no cache
 
     // Clear any existing approvals when starting new fetch
     setApprovals([])
@@ -62,18 +48,14 @@ export function useApprovalsAlchemy(chainId: number): UseApprovalsAlchemyReturn 
     inFlight.current = true
 
     try {
-      console.log(`[OptimizedApprovals] Starting fast check for ${address} on chain ${chainId}`)
       
       // Comprehensive approval check - Revoke.cash benzeri
-      console.log('[Hook] Using approval discovery...')
 
       let activeApprovals: Approval[] = []
 
       if (preferMoralis) {
-        console.log('[OptimizedApprovals] Using Moralis provider')
         activeApprovals = await getApprovalsFromMoralis(address, chainId)
       } else {
-        console.log('[OptimizedApprovals] Using Etherscan+Alchemy hybrid provider')
         const optimizedApprovals = await getCurrentApprovalsOnly(address, chainId)
         activeApprovals = optimizedApprovals.map(approval => ({
           id: approval.id,
@@ -100,17 +82,12 @@ export function useApprovalsAlchemy(chainId: number): UseApprovalsAlchemyReturn 
       }
 
       if (activeApprovals.length === 0) {
-        console.log('[OptimizedApprovals] No approvals found')
         setApprovals([])
         return
       }
 
-      console.log(`[OptimizedApprovals] Found ${activeApprovals.length} active approvals`)
 
       setApprovals(activeApprovals)
-
-      // Cache the results
-      cache.set(cacheKey, { data: activeApprovals, timestamp: Date.now() })
 
     } catch (err) {
       console.error('[OptimizedApprovals] Error fetching approvals:', err)
@@ -122,25 +99,21 @@ export function useApprovalsAlchemy(chainId: number): UseApprovalsAlchemyReturn 
     }
   }, [address, chainId])
 
-  // Otomatik check kaldırıldı - kullanıcı butona basmalı
-  // useEffect(() => {
-  //   fetchApprovals()
-  // }, [fetchApprovals])
-
-  // Get cache statistics
-  const cacheKey = `${address}-${chainId}`
-  const cached = cache.get(cacheKey)
-  const cacheStats = {
-    size: cache.size,
-    age: cached ? Date.now() - cached.timestamp : null,
-    isValid: cached ? Date.now() - cached.timestamp < CACHE_TTL : false
-  }
+  // Otomatik tarama - wallet bağlandığında ve chain değiştiğinde (3 saniye sonra)
+  useEffect(() => {
+    if (address && chainId) {
+      const timeoutId = setTimeout(() => {
+        fetchApprovals()
+      }, 3000) // 3 saniye sonra otomatik tarama
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [fetchApprovals, address, chainId])
 
   return {
     approvals,
     loading,
     error,
-    refetch: fetchApprovals,
-    cacheStats
+    refetch: () => fetchApprovals() // Always fetch fresh data
   }
 }

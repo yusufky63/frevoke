@@ -44,11 +44,9 @@ export async function getApprovalsFromMoralis(
 ): Promise<Approval[]> {
   if (!address) return [];
   if (!MORALIS_API_KEY) {
-    console.warn("[Moralis] Missing API key");
     return [];
   }
   if (!isMoralisSupportedChain(chainId)) {
-    console.log(`[Moralis] Chain ${chainId} not supported; skipping`);
     return [];
   }
 
@@ -78,7 +76,6 @@ export async function getApprovalsFromMoralis(
       const res = await fetch(url, { headers });
       if (!res.ok) {
         const text = await res.text();
-        console.warn(`[Moralis] ${res.status} ${res.statusText}: ${text}`);
         break;
       }
       const data = await res.json();
@@ -128,7 +125,6 @@ export async function getApprovalsFromMoralis(
 
           out.push(approval);
         } catch (e) {
-          console.warn("[Moralis] Error mapping item", e);
         }
       }
 
@@ -145,6 +141,5 @@ export async function getApprovalsFromMoralis(
   const unique = new Map<string, Approval>();
   for (const a of out) unique.set(`${a.tokenAddress}-${a.spender}`, a);
 
-  console.log(`[Moralis] Collected ${out.length} items, unique ${unique.size}`);
   return Array.from(unique.values());
 }

@@ -8,7 +8,6 @@ const ALCHEMY_API_KEY =
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || "4uC-e02TgKlmVF9MqqrMN";
 
 // Debug API key
-console.log(`[Alchemy] API Key loaded: ${ALCHEMY_API_KEY ? 'Present' : 'Missing'}`);
 
 export interface OptimizedApproval {
   id: string;
@@ -44,13 +43,11 @@ async function getTokenMetadataFromAlchemy(tokenAddress: string, chainId: number
   try {
     const chainConfig = getChainConfig(chainId);
     if (!chainConfig) {
-      console.warn(`[AlchemyMetadata] Chain ${chainId} not supported`);
       return {};
     }
 
     const alchemyUrl = getAlchemyUrl(chainId);
     const apiUrl = `${alchemyUrl}/${ALCHEMY_API_KEY}`;
-    console.log(`[AlchemyMetadata] Fetching metadata for ${tokenAddress} from ${apiUrl}`);
     
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -67,7 +64,6 @@ async function getTokenMetadataFromAlchemy(tokenAddress: string, chainId: number
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`[AlchemyMetadata] Failed to fetch metadata for ${tokenAddress}: ${response.status} - ${errorText}`);
       
       // Check for authentication error
       if (response.status === 401 || errorText.includes('Must be authenticated')) {
@@ -80,14 +76,12 @@ async function getTokenMetadataFromAlchemy(tokenAddress: string, chainId: number
     const data = await response.json();
     
     if (data.error) {
-      console.warn(`[AlchemyMetadata] API error: ${data.error.message}`);
       return {};
     }
     
     const tokenData = data.result;
     
     if (!tokenData) {
-      console.warn(`[AlchemyMetadata] No metadata found for ${tokenAddress}`);
       return {};
     }
 
@@ -99,8 +93,7 @@ async function getTokenMetadataFromAlchemy(tokenAddress: string, chainId: number
       discord: tokenData.discord,
       telegram: tokenData.telegram,
     };
-  } catch (error) {
-    console.warn(`[AlchemyMetadata] Error fetching metadata for ${tokenAddress}:`, error);
+  } catch {
     return {};
   }
 }
@@ -113,21 +106,17 @@ export async function getCurrentApprovalsOnly(
   chainId: number
 ): Promise<OptimizedApproval[]> {
   try {
-    console.log(`[Hybrid] Getting approvals for ${userAddress}`);
 
     // 1. Etherscan'dan approval log'larını al
-    console.log("[Hybrid] Fetching approval logs from Etherscan...");
     const approvalLogs = await getApprovalLogsFromEtherscan(
       userAddress,
       chainId
     );
 
     if (approvalLogs.length === 0) {
-      console.log("[Hybrid] No approval logs found");
       return [];
     }
 
-    console.log(`[Hybrid] Found ${approvalLogs.length} approval logs`);
 
     // 2. Unique (token, spender) çiftlerini çıkar
     const uniquePairs = new Map<
@@ -146,10 +135,8 @@ export async function getCurrentApprovalsOnly(
     }
 
     const pairs = Array.from(uniquePairs.values());
-    console.log(`[Hybrid] Found ${pairs.length} unique (token, spender) pairs`);
 
     // 3. Alchemy ile allowance'ları kontrol et
-    console.log("[Hybrid] Checking current allowances with Alchemy...");
     const client = createAlchemyClient(chainId);
     const approvals: OptimizedApproval[] = [];
 
@@ -169,12 +156,6 @@ export async function getCurrentApprovalsOnly(
         });
 
         const allowanceStr = allowance.toString();
-        console.log(
-          `[Hybrid] ${pair.tokenAddress.slice(0, 6)}... -> ${pair.spender.slice(
-            0,
-            6
-          )}...: ${allowanceStr}`
-        );
 
         if (BigInt(allowanceStr) > 0n) {
           // Allowance değerini formatla
@@ -192,21 +173,14 @@ export async function getCurrentApprovalsOnly(
             type: "ERC20" as const,
             source: "alchemy-optimized" as const,
           };
-          console.log(`[Hybrid] Found active approval:`, approval);
           approvals.push(approval);
         }
-        } catch (error) {
-        console.warn(
-          `[Hybrid] Error checking ${pair.tokenAddress} -> ${pair.spender}:`,
-          error
-        );
+        } catch {
       }
     }
 
-    console.log(`[Hybrid] Found ${approvals.length} active approvals`);
     
     // Token metadata'yı Alchemy'den al
-    console.log("[Hybrid] Fetching token metadata from Alchemy...");
     const approvalsWithMetadata = await Promise.all(
       approvals.map(async (approval) => {
         try {
@@ -220,14 +194,12 @@ export async function getCurrentApprovalsOnly(
             tokenDiscord: metadata.discord,
             tokenTelegram: metadata.telegram,
           };
-        } catch (error) {
-          console.warn(`[Hybrid] Failed to fetch metadata for ${approval.tokenAddress}:`, error);
+        } catch {
           return approval;
         }
       })
     );
     
-    console.log(`[Hybrid] Enhanced ${approvalsWithMetadata.length} approvals with metadata`);
     return approvalsWithMetadata;
   } catch (error) {
     console.error("[Hybrid] Error:", error);
@@ -256,11 +228,6 @@ const fetchWithRetryV2 = async (baseUrl: string, params: Record<string, string>,
           data?.message?.toLowerCase().includes("max calls per sec"))
       ) {
         if (i < retries - 1) {
-          console.log(
-            `[EtherscanV2] Rate limit detected, waiting 5 seconds before retry ${
-              i + 1
-            }...`
-          );
           await new Promise(resolve => setTimeout(resolve, 5000));
           continue;
         } else {
@@ -343,7 +310,6 @@ async function getApprovalLogsFromEtherscan(
   chainId: number
 ): Promise<Array<{ tokenAddress: string; spender: string; value: string }>> {
   try {
-    console.log(`[API] Fetching approval logs for ${userAddress} on chain ${chainId}`);
 
     // Blockscout kullanan chain'ler
     const blockscoutChains = [666666666, 7777777]; // Degen, Zora
@@ -370,12 +336,10 @@ async function getApprovalLogsFromEtherscan(
     const data = await fetchWithRetryV2("https://api.etherscan.io/v2/api", params);
 
     if (data.status !== "1") {
-      console.warn(`[EtherscanV2] API error: ${data.message}`);
       return [];
     }
 
     const logs = data.result || [];
-    console.log(`[EtherscanV2] Found ${logs.length} approval logs`);
 
     // Log'ları işle
     const approvalLogs = [];
@@ -390,12 +354,10 @@ async function getApprovalLogsFromEtherscan(
           spender,
           value,
         });
-        } catch (error) {
-        console.warn("[EtherscanV2] Error processing log:", error);
+        } catch {
       }
     }
 
-    console.log(`[EtherscanV2] Processed ${approvalLogs.length} approval logs`);
     return approvalLogs;
   } catch (error) {
     console.error("[API] Error fetching logs:", error);
@@ -411,11 +373,9 @@ async function getApprovalLogsFromBlockscout(
   chainId: number
 ): Promise<Array<{ tokenAddress: string; spender: string; value: string }>> {
   try {
-    console.log(`[Blockscout] Fetching approval logs for ${userAddress} on chain ${chainId}`);
 
     const blockscoutUrl = getBlockscoutUrl(chainId);
     if (!blockscoutUrl) {
-      console.warn(`[Blockscout] No API configured for chain ${chainId}`);
       return [];
     }
 
@@ -437,12 +397,10 @@ async function getApprovalLogsFromBlockscout(
     const data = await response.json();
 
     if (data.status !== "1") {
-      console.warn(`[Blockscout] API error: ${data.message}`);
       return [];
     }
 
     const logs = data.result || [];
-    console.log(`[Blockscout] Found ${logs.length} approval logs`);
 
     // Log'ları işle
     const approvalLogs = [];
@@ -457,12 +415,10 @@ async function getApprovalLogsFromBlockscout(
           spender,
           value,
         });
-      } catch (error) {
-        console.warn("[Blockscout] Error processing log:", error);
+      } catch {
       }
     }
 
-    console.log(`[Blockscout] Processed ${approvalLogs.length} approval logs`);
     return approvalLogs;
   } catch (error) {
     console.error("[Blockscout] Error fetching logs:", error);
