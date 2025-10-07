@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "name": "fRevoke",
+  "description": "Revoke token approvals on Base network. Secure your wallet by revoking unnecessary token permissions.",
+  "frame": {
+    "name": "fRevoke",
+    "homeUrl": "https://frevoke.vercel.app",
+    "iconUrl": "https://frevoke.vercel.app/logo.png",
+    "splashImageUrl": "https://frevoke.vercel.app/logo.png",
+    "privacyPolicyUrl": "https://frevoke.vercel.app/privacy",
+    "termsOfServiceUrl": "https://frevoke.vercel.app/terms"
+  },
+  "capabilities": {
+    "wallet": true,
+    "transactions": true
+  },
+  "permissions": {
+    "wallet": {
+      "accounts": [
+        "read"
+      ],
+      "transactions": [
+        "write"
+      ]
+    }
+  },
+  "supportedChains": [
+    {
+      "chainId": "0x2105",
+      "name": "Base",
+      "rpcUrl": "https://mainnet.base.org",
+      "blockExplorerUrl": "https://basescan.org",
+      "nativeCurrency": {
+        "name": "Ethereum",
+        "symbol": "ETH",
+        "decimals": 18
+      }
+    }
+  ]
+}
