@@ -14,10 +14,8 @@
     "iconUrl": "https://frevoke.vercel.app/logo.png",
     "splashImageUrl": "https://frevoke.vercel.app/logo.png",
     "splashBackgroundColor": "#efefef",
-    "privacyPolicyUrl": "https://frevoke.vercel.app/privacy",
-    "termsOfServiceUrl": "https://frevoke.vercel.app/terms",
     "subtitle": "Token Approval Revoker",
-    "description": "Revoke token approvals on Base network. Secure your wallet by revoking unnecessary token permissions.",
+    "description": "Revoke token approvals on Base. Secure your wallet by revoking unnecessary permissions.",
     "screenshotUrls": [
       "https://frevoke.vercel.app/logo.png",
       "https://frevoke.vercel.app/logo.png",
@@ -28,7 +26,7 @@
     "heroImageUrl": "https://frevoke.vercel.app/logo.png",
     "tagline": "Secure your wallet",
     "ogTitle": "fRevoke - Token Revoker",
-    "ogDescription": "Revoke token approvals on Base network. Secure your wallet by revoking unnecessary permissions.",
+    "ogDescription": "Revoke token approvals on Base. Secure your wallet by revoking unnecessary permissions.",
     "ogImageUrl": "https://frevoke.vercel.app/logo.png",
     "noindex": false
   },
@@ -39,9 +37,8 @@
     "iconUrl": "https://frevoke.vercel.app/logo.png",
     "splashImageUrl": "https://frevoke.vercel.app/logo.png",
     "splashBackgroundColor": "#efefef",
-    "webhookUrl": "https://frevoke.vercel.app/api/webhook",
     "subtitle": "Token Approval Revoker",
-    "description": "Revoke token approvals. Secure your wallet by revoking unnecessary token permissions.",
+    "description": "Revoke token approvals on Base. Secure your wallet by revoking unnecessary permissions.",
     "screenshotUrls": [
       "https://frevoke.vercel.app/logo.png",
       "https://frevoke.vercel.app/logo.png",
@@ -52,7 +49,7 @@
     "heroImageUrl": "https://frevoke.vercel.app/logo.png",
     "tagline": "Secure your wallet",
     "ogTitle": "fRevoke - Token Revoker",
-    "ogDescription": "Revoke token approvals. Secure your wallet by revoking unnecessary permissions.",
+    "ogDescription": "Revoke token approvals on Base. Secure your wallet by revoking unnecessary permissions.",
     "ogImageUrl": "https://frevoke.vercel.app/logo.png",
     "noindex": false
   }
