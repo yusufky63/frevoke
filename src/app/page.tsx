@@ -285,7 +285,7 @@ export default function HomePage() {
   const handleComposeCast = async () => {
     try {
       const chainName = getChainName(selectedChainId);
-      const text = `🔒 Just secured my wallet by revoking ${lastRevokeCount} token approvals on ${chainName}! 
+      const text = ` Just secured my wallet by revoking ${lastRevokeCount} token approvals on ${chainName}! 
 
 Using @fRevoke to keep my crypto safe 🛡️
 
