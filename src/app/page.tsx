@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { useState, useEffect } from "react";
+import { useAccount, useChainId } from "wagmi";
 import { useApprovalsAlchemy } from "@/hooks/useApprovalsAlchemy";
 import { useRevoke } from "@/hooks/useRevoke";
 import { useWalletStatus } from "@/hooks/useWalletStatus";
@@ -12,70 +12,33 @@ import { BatchOperations } from "@/components/BatchOperations";
 import { WalletChainSelector } from "@/components/WalletChainSelector";
 import { TokenApprovalsTable } from "@/components/TokenApprovalsTable";
 import { Pagination } from "@/components/Pagination";
+import { SuccessModal } from "@/components/modals/SuccessModal";
+import { LoadingState } from "@/components/states/LoadingState";
+import { EmptyState } from "@/components/states/EmptyState";
+import { ScanButton } from "@/components/ScanButton";
+import { useChainSwitch } from "@/hooks/useChainSwitch";
+import { useAutoScan } from "@/hooks/useAutoScan";
 import { getChainName } from "@/lib/chain-config";
 import { sdk } from "@farcaster/miniapp-sdk";
-import {
-  SunIcon,
-  MoonIcon,
-  XMarkIcon,
-  CheckCircleIcon,
-  ShareIcon,
-} from "@heroicons/react/24/outline";
+import { SunIcon, MoonIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 
 export default function HomePage() {
   const { address } = useAccount();
-  const { switchChain } = useSwitchChain();
   const [isDark, setIsDark] = useState(false);
   const walletStatus = useWalletStatus();
+  const { switchToChain } = useChainSwitch();
 
-  // More reliable connection check - address varsa connected say
   const isWalletConnected = !!address;
-
-  // Unified loading state for scan operations
-  const [isScanning, setIsScanning] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  // Pagination calculations will be moved after filteredApprovals is set
-  const [selectedChainId, setSelectedChainId] = useState<number>(8453); // Default to Base
+  const [selectedChainId, setSelectedChainId] = useState<number>(8453);
   const currentChainId = useChainId();
-
-  // Auto switch chain function
-  const autoSwitchChain = useCallback(
-    async (chainId: number) => {
-      try {
-        // Use Farcaster SDK for chain switching in Mini Apps
-        const provider = await sdk.wallet.getEthereumProvider();
-        if (provider && provider.request) {
-          await provider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: `0x${chainId.toString(16)}` }],
-          });
-          return true;
-        } else {
-          throw new Error("Farcaster provider not available");
-        }
-      } catch (err) {
-        console.error("Farcaster SDK chain switch failed:", err);
-
-        // Fallback to Wagmi if Farcaster fails
-        try {
-          await switchChain({ chainId });
-
-          return true;
-        } catch (wagmiError) {
-          console.error("[HomePage] Wagmi fallback also failed:", wagmiError);
-          throw new Error(`Failed to switch to ${getChainName(chainId)}`);
-        }
-      }
-    },
-    [switchChain]
-  );
 
   // Use only optimized version for fast performance
   const {
     approvals,
+    loading: approvalsLoading,
     error: approvalsError,
     refetch,
   } = useApprovalsAlchemy(selectedChainId);
@@ -92,33 +55,28 @@ export default function HomePage() {
   const [lastRevokeCount, setLastRevokeCount] = useState<number>(0);
   const [lastRevokeChain, setLastRevokeChain] = useState<string>("");
 
+  const { triggerAutoScan } = useAutoScan({ 
+    refetch,
+    delay: 1000 
+  });
+
   const { revoke, setAllowance, status, transactionHash, isRevoking } =
     useRevoke(
       selectedChainId,
       async (count, chainName) => {
-        // Revoke success callback - show modal
-        console.log("🎉 Revoke success callback triggered!");
-        console.log("🔍 count:", count);
-        console.log("🔍 chainName:", chainName);
-        
+        console.log('[DEBUG page.tsx] onRevokeSuccess called! count:', count, 'chain:', chainName);
         setLastRevokeCount(count);
         setLastRevokeChain(chainName);
 
-        // Show modal immediately
+        console.log('[DEBUG page.tsx] Setting showShareModal to true, count > 0?', count > 0);
         if (count > 0) {
-          console.log("✅ Showing success modal for revoke operation");
           setShowShareModal(true);
         }
 
-        // Trigger auto-scan after successful revoke
-        await handleAutoScan();
+        await triggerAutoScan();
       },
-      async (txHash, chainName) => {
-        // Edit success callback - just refresh table
-        console.log(`✅ Edit successful: ${txHash} on ${chainName}`);
-
-        // Trigger auto-scan after successful edit
-        await handleAutoScan();
+      async () => {
+        await triggerAutoScan();
       }
     );
 
@@ -285,29 +243,24 @@ export default function HomePage() {
   const handleComposeCast = async () => {
     try {
       const chainName = getChainName(selectedChainId);
-      const text = ` Just secured my wallet by revoking ${lastRevokeCount} token approvals on ${chainName}! 
+      const text = `Just secured my wallet by revoking ${lastRevokeCount} token approval${lastRevokeCount > 1 ? "s" : ""} on ${chainName}! 
 
 Using @fRevoke to keep my crypto safe 🛡️
 
 #fRevoke`;
 
-      const result = await sdk.actions.composeCast({
+      await sdk.actions.composeCast({
         text,
         embeds: [window.location.href],
       });
 
-      if (result?.cast) {
-      }
-
       setShowShareModal(false);
-      // Reset revoke count after sharing
       setLastRevokeCount(0);
       setLastRevokeChain("");
 
-      // Refresh table after sharing
-      handleAutoScan();
-    } catch (error) {
-      console.error("Failed to compose cast:", error);
+      await triggerAutoScan();
+    } catch {
+      // Silent fail
     }
   };
 
@@ -315,16 +268,15 @@ Using @fRevoke to keep my crypto safe 🛡️
   useEffect(() => {
     const autoAddMiniApp = async () => {
       try {
-        // Wait a bit for the app to be ready
         await new Promise((resolve) => setTimeout(resolve, 2000));
         await handleAddMiniApp();
       } catch {
-        // Silently fail - this is expected for some users
+        // Silent fail
       }
     };
 
     autoAddMiniApp();
-  }, []); // Only run once on mount
+  }, []);
 
   // Auto switch to selected chain on page load
   useEffect(() => {
@@ -335,17 +287,16 @@ Using @fRevoke to keep my crypto safe 🛡️
         currentChainId !== selectedChainId
       ) {
         try {
-          await autoSwitchChain(selectedChainId);
-        } catch (error) {
-          console.error("[HomePage] Auto switch on page load failed:", error);
+          await switchToChain(selectedChainId);
+        } catch {
+          // Silent fail
         }
       }
     };
 
-    // Wait a bit for wallet to be ready
     const timer = setTimeout(performAutoSwitch, 1000);
     return () => clearTimeout(timer);
-  }, [isWalletConnected, selectedChainId, currentChainId, autoSwitchChain]);
+  }, [isWalletConnected, selectedChainId, currentChainId, switchToChain]);
 
   // Dark mode toggle
   useEffect(() => {
@@ -431,37 +382,21 @@ Using @fRevoke to keep my crypto safe 🛡️
     }
   }, [approvals, searchTerm]);
 
-  // Auto-scan after revoke operations
-  const handleAutoScan = useCallback(async () => {
-    setIsScanning(true);
+  // Scan handler - just call refetch, loading handled by hook
+  const handleScan = async () => {
+    await refetch();
+  };
 
-    try {
-      // Wait a bit for transaction to be processed
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      // Force refresh to get updated data
-      await refetch();
-    } catch (error) {
-      console.error("❌ Auto-scan failed:", error);
-    } finally {
-      setIsScanning(false);
-    }
-  }, [refetch]);
-
-  // Clear table when chain changes - NO AUTO SCAN
+  // Clear table when chain changes
   useEffect(() => {
     // Clear all UI state when chain changes
     setSelectedApprovals([]);
     setFilteredApprovals([]);
     setCurrentPage(1);
-    setSearchTerm(""); // Clear search when chain changes
+    setSearchTerm("");
     setEditingApprovalId(null);
     setEditValue("");
     setInputError("");
-
-    // NO AUTO SCAN - let user manually scan when needed
-    if (isWalletConnected && selectedChainId) {
-    }
   }, [selectedChainId, isWalletConnected]);
 
   // Clear editing state when transaction is confirmed
@@ -482,21 +417,6 @@ Using @fRevoke to keep my crypto safe 🛡️
     startIndex,
     endIndex
   );
-
-  const handleScan = async () => {
-    setIsScanning(true);
-
-    try {
-      // Start the actual data fetching
-      await refetch();
-    } catch (error) {
-      console.error("❌ Scan failed:", error);
-    } finally {
-      // Always stop scanning state
-      setIsScanning(false);
-    }
-  };
-
 
   const handleSelectAll = () => {
     if ((selectedApprovals?.length || 0) === (approvals?.length || 0)) {
@@ -522,8 +442,6 @@ Using @fRevoke to keep my crypto safe 🛡️
       ]);
     }
   };
-
-  // Duplicate definitions removed - already defined above
 
   return (
     <div className="min-h-screen bg-white dark:bg-black transition-colors">
@@ -602,42 +520,11 @@ Using @fRevoke to keep my crypto safe 🛡️
 
         {/* Scan Section */}
         {isWalletConnected && (
-          <div className="text-center my-4">
-            <button
-              onClick={handleScan}
-              disabled={isScanning}
-              className="inline-flex items-center space-x-2 px-6 py-2 shadow-md bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg font-medium transition-colors"
-            >
-              {/* Scan icon with animation */}
-              <svg
-                className={`w-5 h-5 `}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 7V5a2 2 0 012-2h2M21 7V5a2 2 0 00-2-2h-2M3 17v2a2 2 0 002 2h2M21 17v2a2 2 0 01-2 2h-2M8 12h8"
-                />
-              </svg>
-              <span>{isScanning ? "Scanning..." : "Refresh Approvals"}</span>
-            </button>
-
-            {/* Scan progress indicator */}
-            {isScanning && (
-              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                  <span>
-                    Scanning {getChainName(selectedChainId)} for active
-                    approvals...
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
+          <ScanButton
+            onScan={handleScan}
+            isScanning={approvalsLoading}
+            chainName={getChainName(selectedChainId)}
+          />
         )}
 
         {/* Batch Operations */}
@@ -647,29 +534,20 @@ Using @fRevoke to keep my crypto safe 🛡️
             approvals={approvals || []}
             onBatchRevoke={async (selectedApprovalObjects) => {
               try {
-                // Clear selected approvals before revoke to prevent UI issues
                 setSelectedApprovals([]);
-
-                // Store revoke count and chain for sharing - ONLY when transaction is actually sent
-                // This will be set in the success handler, not here
                 await revoke(selectedApprovalObjects);
-
-                // NO AUTO REFRESH - let user manually refresh if needed
-              } catch (error) {
-                console.error("❌ Batch revoke error:", error);
-                // Error is already handled in useRevoke hook
-                // Reset revoke count on error
+              } catch {
                 setLastRevokeCount(0);
                 setLastRevokeChain("");
               }
             }}
-            isRevoking={isRevoking}
+            isRevoking={isRevoking || approvalsLoading}
           />
         )}
 
-        {/* Token Approvals Table - Only show when connected, not scanning, and has data */}
+        {/* Token Approvals Table - Show when connected and has data */}
         {isWalletConnected &&
-          !isScanning &&
+          !approvalsLoading &&
           approvals &&
           approvals.length > 0 && (
             <>
@@ -735,28 +613,19 @@ Using @fRevoke to keep my crypto safe 🛡️
               status={status}
               transactionHash={transactionHash}
               onToastShown={() => {
-                // Refresh table when toast is shown for CONFIRMED status
                 if (status.status === "CONFIRMED") {
-                  setTimeout(() => {
-                    handleAutoScan();
-                  }, 1000); // 1 second after toast is shown
+                  setTimeout(async () => {
+                    await triggerAutoScan();
+                  }, 1000);
                 }
               }}
             />
           </div>
         )}
 
-        {/* Loading State - Unified */}
-        {isScanning && (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-              Scanning approvals...
-            </p>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-              Checking {getChainName(selectedChainId)} for active approvals...
-            </p>
-          </div>
+        {/* Loading State */}
+        {isWalletConnected && approvalsLoading && (
+          <LoadingState chainName={getChainName(selectedChainId)} />
         )}
 
         {/* Error State */}
@@ -775,69 +644,28 @@ Using @fRevoke to keep my crypto safe 🛡️
           </div>
         )}
 
-        {/* No Results State - Only show after scan is completed */}
+        {/* Empty State - Show when not loading and no approvals */}
         {isWalletConnected &&
-          !isScanning &&
+          !approvalsLoading &&
           !approvalsError &&
           approvals &&
           approvals.length === 0 && (
-            <div className="text-center py-8">
-              <CheckCircleIcon className="w-8 h-8 text-green-500 mx-auto mb-4" />
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                No active approvals found
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                Your wallet is secure! No tokens have been approved for spending
-                on {getChainName(selectedChainId)}.
-              </p>
-            </div>
+            <EmptyState chainName={getChainName(selectedChainId)} />
           )}
 
-        {/* Share Modal - Only show for successful revoke operations */}
-        {showShareModal && lastRevokeCount > 0 && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg max-w-sm w-full border border-slate-200 dark:border-slate-800">
-              {/* Header with indigo */}
-              <div className="bg-indigo-600 rounded-t-xl px-4 py-2 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircleIcon className="w-4 h-4 text-white" />
-                  <h3 className="text-sm font-medium text-white">
-                    🎉 Wallet Secured!
-                  </h3>
-                </div>
-              </div>
-
-              <div className="p-4">
-                <p className="text-xs text-slate-600 dark:text-slate-300 mb-4 text-center">
-                  Keep my crypto safe, keep my wallet
-                </p>
-
-                <div className="space-y-2">
-                  <button
-                    onClick={handleComposeCast}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
-                  >
-                    <ShareIcon className="w-3 h-3" />
-                    Share on Farcaster
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowShareModal(false);
-                      setLastRevokeCount(0);
-                      setLastRevokeChain("");
-
-                      // Refresh table after modal is closed
-                      handleAutoScan();
-                    }}
-                    className="w-full px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    Maybe Later
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Success Modal */}
+        <SuccessModal
+          isOpen={showShareModal}
+          onClose={async () => {
+            setShowShareModal(false);
+            setLastRevokeCount(0);
+            setLastRevokeChain("");
+            await triggerAutoScan();
+          }}
+          revokeCount={lastRevokeCount}
+          chainName={lastRevokeChain}
+          onShare={handleComposeCast}
+        />
       </main>
     </div>
   );

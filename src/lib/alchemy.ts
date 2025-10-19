@@ -3,11 +3,11 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import { getAlchemyUrl, getChainConfig } from "./chain-config";
 
-// Optimized version - sadece current allowance'ları kontrol et
+// ⚠️ SECURITY WARNING: API keys should be stored in environment variables
+// Please set NEXT_PUBLIC_ALCHEMY_API_KEY in your .env.local file
+// Never commit API keys to git repositories
 const ALCHEMY_API_KEY =
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || "4uC-e02TgKlmVF9MqqrMN";
-
-// Debug API key
 
 export interface OptimizedApproval {
   id: string;
@@ -444,9 +444,25 @@ function getBlockscoutUrl(chainId: number): string | null {
 
 /**
  * Get Etherscan API key for chain
+ * 
+ * ⚠️ SECURITY WARNING: API keys should be stored in environment variables
+ * These hardcoded keys are for fallback only and should be replaced with:
+ * NEXT_PUBLIC_ETHERSCAN_API_KEY_1, NEXT_PUBLIC_ETHERSCAN_API_KEY_2, etc.
  */
 function getEtherscanApiKey(): string | null {
-  // Etherscan API key pool - random selection for rate limiting
+  // Try environment variables first
+  const envKeys = [
+    process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY_1,
+    process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY_2,
+    process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY_3,
+  ].filter(Boolean);
+
+  if (envKeys.length > 0) {
+    const randomIndex = Math.floor(Math.random() * envKeys.length);
+    return envKeys[randomIndex] as string;
+  }
+
+  // ⚠️ FALLBACK ONLY - Replace these with environment variables
   const ETHERSCAN_API_KEYS = [
     "M6Y2NY3ABTV3T4BPNMYZ9X2TP2MAYJTK21",
     "I2ZMSH3H1XF7ZZEYEKEBNY3T2X4K9AJVEW",
@@ -458,7 +474,6 @@ function getEtherscanApiKey(): string | null {
     "TXPBNJ8TVRCNHDSYDA6VX1JPBXQ2KX654J",
   ];
 
-  // Random key selection for better rate limiting
   const randomIndex = Math.floor(Math.random() * ETHERSCAN_API_KEYS.length);
   return ETHERSCAN_API_KEYS[randomIndex];
 }

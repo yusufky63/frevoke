@@ -99,12 +99,16 @@ export function useApprovalsAlchemy(chainId: number): UseApprovalsAlchemyReturn 
     }
   }, [address, chainId])
 
-  // Otomatik tarama - wallet bağlandığında ve chain değiştiğinde (3 saniye sonra)
+  // Otomatik tarama - wallet bağlandığında ve chain değiştiğinde (1 saniye sonra)
   useEffect(() => {
     if (address && chainId) {
+      // Clear approvals and show loading immediately when chain changes
+      setApprovals([])
+      setLoading(true)
+      
       const timeoutId = setTimeout(() => {
         fetchApprovals()
-      }, 3000) // 3 saniye sonra otomatik tarama
+      }, 1000) // 1 saniye sonra otomatik tarama (daha hızlı)
       
       return () => clearTimeout(timeoutId)
     }

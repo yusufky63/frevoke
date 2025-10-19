@@ -71,48 +71,43 @@ export function TokenApprovalsTable({
   };
 
   return (
-    <div className="bg-transparent backdrop-blur-md rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-      {/* Modern Table Header with Search */}
-      <div className="p-2 bg-transparent border-b border-gray-200 dark:border-gray-600">
+    <div className="bg-transparent rounded-lg border border-gray-200 dark:border-gray-800">
+      {/* Table Header with Search */}
+      <div className="p-3 bg-transparent border-b border-gray-200 dark:border-gray-800">
         <div className="flex flex-col gap-3">
           {/* Top Row - Title and Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             {/* Title Section */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  Token Approvals
-                </h2>
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 bg-white/60 dark:bg-gray-600/60 px-2 py-1 rounded-full">
-                {approvals.length} found
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Token Approvals
+              </h2>
+              <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                {approvals.length}
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-transparent rounded-lg p-1">
-                <button
-                  onClick={onSelectAll}
-                  className="px-3 py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md transition-all duration-200"
-                >
-                  {(selectedApprovals?.length || 0) === (approvals?.length || 0)
-                    ? "Deselect All"
-                    : "Select All"}
-                </button>
-                <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-                <button
-                  onClick={onSelectPage}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600/50 rounded-md transition-all duration-200"
-                >
-                  {currentApprovals.every((approval) =>
-                    (selectedApprovals || []).includes(approval.id)
-                  )
-                    ? "Deselect Page"
-                    : "Select Page"}
-                </button>
-              </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onSelectAll}
+                className="px-3 py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition-colors"
+              >
+                {(selectedApprovals?.length || 0) === (approvals?.length || 0)
+                  ? "Deselect All"
+                  : "Select All"}
+              </button>
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
+              <button
+                onClick={onSelectPage}
+                className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
+              >
+                {currentApprovals.every((approval) =>
+                  (selectedApprovals || []).includes(approval.id)
+                )
+                  ? "Deselect Page"
+                  : "Select Page"}
+              </button>
             </div>
           </div>
 
@@ -125,7 +120,7 @@ export function TokenApprovalsTable({
                 placeholder="Search tokens, addresses..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 dark:border-gray-800 rounded-lg bg-transparent text-gray-900 dark:text-gray-100 outline-none"
+                className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors"
               />
               {searchTerm && (
                 <button
@@ -149,23 +144,31 @@ export function TokenApprovalsTable({
               key={approval.id}
               className="border-b border-gray-200 dark:border-gray-800 last:border-b-0"
             >
-              {/* Compact Row */}
-              <div
-                className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                onClick={() => toggleExpanded(approval.id)}
+              {/* Compact Row - Clickable to select */}
+              <div 
+                className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                onClick={() => {
+                  const isSelected = (selectedApprovals || []).includes(approval.id);
+                  onSelectApproval(approval.id, !isSelected);
+                }}
               >
                 <div className="flex items-center justify-between">
                   {/* Left Side - Token Info with Checkbox */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={(selectedApprovals || []).includes(approval.id)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        onSelectApproval(approval.id, e.target.checked);
-                      }}
-                      className="w-4 h-4 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-800 dark:border-gray-600 checked:bg-indigo-600 checked:border-indigo-600 flex-shrink-0"
-                    />
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {/* Custom Checkbox */}
+                    <div className="relative flex items-center justify-center flex-shrink-0">
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                        (selectedApprovals || []).includes(approval.id)
+                          ? 'bg-indigo-600 border-indigo-600'
+                          : 'bg-transparent border-gray-300 dark:border-gray-600'
+                      }`}>
+                        {(selectedApprovals || []).includes(approval.id) && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Token Logo */}
                     <div className="flex-shrink-0">
@@ -191,22 +194,11 @@ export function TokenApprovalsTable({
 
                     {/* Token Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {(() => {
-                          const tokenName =
-                            approval.tokenName || "Unknown Token";
-                          return tokenName.length > 15
-                            ? tokenName.slice(0, 15) + "..."
-                            : tokenName;
-                        })()}
+                      <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        {approval.tokenName || "Unknown Token"}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                        {(() => {
-                          const tokenSymbol = approval.tokenSymbol || "";
-                          return tokenSymbol.length > 15
-                            ? tokenSymbol.slice(0, 15) + "..."
-                            : tokenSymbol;
-                        })()}
+                      <div className="text-[10px] text-gray-600 dark:text-gray-400">
+                        {approval.tokenSymbol || "???"}
                       </div>
                     </div>
                   </div>
@@ -219,37 +211,42 @@ export function TokenApprovalsTable({
                         onRevoke(approval);
                       }}
                       disabled={isRevoking}
-                      className="px-3 py-1.5 text-xs rounded-md font-medium transition-colors bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 text-xs rounded font-medium transition-colors bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isRevoking ? "Revoking..." : "Revoke"}
+                      Revoke
                     </button>
 
-                    {/* Expand Arrow */}
-                    <svg
-                      className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    {/* Expand Arrow - Only this triggers expand */}
+                    <button
+                      onClick={() => toggleExpanded(approval.id)}
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                      <svg
+                        className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Expanded Details */}
               {isExpanded && (
-                <div className="px-3 pb-3 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-200 dark:border-gray-700">
-                  <div className="pt-2">
+                <div className="px-3 pb-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+                  <div className="pt-3">
                     {/* Compact Grid Layout */}
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
                       {/* Token Address */}
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -257,7 +254,7 @@ export function TokenApprovalsTable({
                             Token Address
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 font-mono text-[10px] text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 p-1.5 rounded border border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center gap-1 font-mono text-[10px] text-gray-700 dark:text-gray-300 break-all bg-transparent p-1.5 rounded border border-gray-200 dark:border-gray-600">
                           <span className="flex-1">
                             {approval.tokenAddress.slice(0, 6)}...
                             {approval.tokenAddress.slice(-4)}
@@ -280,7 +277,7 @@ export function TokenApprovalsTable({
                             Spender Address
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 font-mono text-[10px] text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 p-1.5 rounded border border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center gap-1 font-mono text-[10px] text-gray-700 dark:text-gray-300 break-all bg-transparent p-1.5 rounded border border-gray-200 dark:border-gray-600">
                           <span className="flex-1">
                             {approval.spender.slice(0, 6)}...
                             {approval.spender.slice(-4)}
@@ -365,7 +362,7 @@ export function TokenApprovalsTable({
                                   )
                                 }
                                 placeholder={`Enter amount (e.g., 100, 0.5, unlimited)`}
-                                className={`flex-1 px-2 py-1 text-[10px] border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                                className={`flex-1 px-2 py-1 text-[10px] border rounded bg-transparent text-gray-900 dark:text-gray-100 ${
                                   inputError
                                     ? "border-red-300 dark:border-red-600"
                                     : "border-gray-300 dark:border-gray-600"

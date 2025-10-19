@@ -49,6 +49,7 @@ export function useRevoke(
     undefined
   );
   const [isRevokeOperation, setIsRevokeOperation] = useState<boolean>(false);
+  const [currentRevokeCount, setCurrentRevokeCount] = useState<number>(0);
 
   // Use Wagmi's useWaitForTransactionReceipt for better transaction tracking
   const {
@@ -111,13 +112,11 @@ export function useRevoke(
           message: "Transaction sent, waiting for confirmation...",
         });
 
-        // Use setTimeout to ensure state updates are processed
         setTimeout(() => {
           setPendingTxHash(formattedHash);
           setCurrentTxHash(formattedHash);
         }, 100);
       } else {
-        console.error("❌ No transaction hash found in sendCallsData");
         setStatus({
           status: "FAILED",
           error: "Transaction failed: No transaction hash returned",
@@ -129,7 +128,6 @@ export function useRevoke(
   // Track sendCallsError changes
   useEffect(() => {
     if (sendCallsError) {
-      console.error("❌ sendCalls failed with error:", sendCallsError);
       setStatus({
         status: "FAILED",
         error: `Transaction failed: ${
@@ -141,11 +139,8 @@ export function useRevoke(
 
   // Track receipt status with Wagmi
   useEffect(() => {
-    // Only log when there are meaningful changes
-
     if (receipt) {
       if (receipt.status === "success") {
-        console.log("✅ Transaction confirmed as successful!");
         setStatus({
           status: "CONFIRMED",
           hash: pendingTxHash,
@@ -156,12 +151,8 @@ export function useRevoke(
         // Call success callback for both revoke and edit operations
         if (pendingTxHash) {
           if (isRevokeOperation && onRevokeSuccess) {
-            console.log("🎉 Calling revoke success callback");
-            // For revoke operations - show modal
-            onRevokeSuccess(1, getChainName(targetChainId || currentChainId));
+            onRevokeSuccess(currentRevokeCount, getChainName(targetChainId || currentChainId));
           } else if (!isRevokeOperation && onEditSuccess) {
-            console.log("🎉 Calling edit success callback");
-            // For edit operations - just refresh table
             onEditSuccess(
               pendingTxHash,
               getChainName(targetChainId || currentChainId)
@@ -169,11 +160,9 @@ export function useRevoke(
           }
         }
 
-        // Clear pending hash
         setPendingTxHash(undefined);
         setCurrentTxHash(undefined);
       } else {
-        console.log("❌ Transaction failed on-chain");
         setStatus({
           status: "FAILED",
           error: "Transaction failed on-chain",
@@ -184,7 +173,6 @@ export function useRevoke(
     }
 
     if (receiptError) {
-      console.log("❌ Receipt error:", receiptError);
       setStatus({
         status: "FAILED",
         error: `Transaction error: ${receiptError.message}`,
@@ -203,6 +191,7 @@ export function useRevoke(
     currentChainId,
     isRevokeOperation,
     isReceiptLoading,
+    currentRevokeCount,
   ]);
 
   // Helper function to switch chains automatically using Farcaster SDK
@@ -240,18 +229,18 @@ export function useRevoke(
   const revoke = async (approvals: Approval[]) => {
     if (!address || approvals.length === 0) return;
 
+    const revokeCount = approvals.length;
+
     // Start tracking the revoke operation
     const operationId = RevokeTracker.startTracking(
       targetChainId || currentChainId,
-      approvals.length
+      revokeCount
     );
 
     setIsRevoking(true);
-    // Don't show toast for initial pending state
     setStatus({ status: "PENDING" });
-
-    // Mark this as a revoke operation
     setIsRevokeOperation(true);
+    setCurrentRevokeCount(revokeCount);
 
     try {
       // Automatically switch to the target chain if needed
@@ -304,10 +293,7 @@ export function useRevoke(
       });
 
       // Check wallet connection before proceeding
-      // For Farcaster Mini Apps, use address instead of isConnected
-      // because isConnected can be false even when wallet is connected
       if (!address) {
-        console.error("❌ Wallet not connected - no address");
         setStatus({
           status: "FAILED",
           error: "Wallet not connected. Please connect your wallet first.",
@@ -315,9 +301,7 @@ export function useRevoke(
         return;
       }
 
-      // Additional check for connector
       if (!connector) {
-        console.error("❌ No wallet connector found");
         setStatus({
           status: "FAILED",
           error:
@@ -325,8 +309,6 @@ export function useRevoke(
         });
         return;
       }
-
-      console.log("✅ Wallet connection verified - address:", address);
 
       // Check if we're using Farcaster connector
       const isFarcasterConnector =
@@ -339,9 +321,15 @@ export function useRevoke(
           throw new Error("Farcaster provider not available");
         }
 
-        // Send each call individually using Farcaster SDK
-        for (const call of calls) {
-          console.log("🔍 Sending call via Farcaster SDK:", call);
+        // Send each call individually and wait for all
+        const txHashes: string[] = [];
+        for (let i = 0; i < calls.length; i++) {
+          const call = calls[i];
+          setStatus({
+            status: "PENDING",
+            message: `Processing ${i + 1} of ${calls.length}...`,
+          });
+
           const txHash = await provider.request({
             method: "eth_sendTransaction",
             params: [
@@ -353,67 +341,63 @@ export function useRevoke(
               },
             ],
           });
-          console.log("🔍 Farcaster transaction hash:", txHash);
 
-          // Set the transaction hash for tracking
           if (txHash) {
-            const formattedHash = txHash.startsWith("0x")
-              ? (txHash as `0x${string}`)
-              : (`0x${txHash}` as `0x${string}`);
-
-            setStatus({
-              status: "PENDING",
-              message: "Transaction sent, waiting for confirmation...",
-            });
-
-            setTimeout(() => {
-              console.log("🔍 Setting pendingTxHash to:", formattedHash);
-              setPendingTxHash(formattedHash);
-              setCurrentTxHash(formattedHash);
-            }, 100);
+            txHashes.push(txHash);
+            // Wait a bit between transactions
+            if (i < calls.length - 1) {
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
           }
         }
 
-        // For Farcaster SDK, we need to manually call the success callback
-        // since useWaitForTransactionReceipt might not work properly
-        setTimeout(async () => {
-          console.log(
-            "🎉 Farcaster transaction completed, calling success callback"
-          );
-          setStatus({
-            status: "CONFIRMED",
-            hash: pendingTxHash,
-            message: "Transaction confirmed successfully",
-          });
-          setLastTxHash(pendingTxHash);
+        // Wait for all transactions to be processed
+        if (txHashes.length > 0) {
+          const lastHash = txHashes[txHashes.length - 1];
+          const formattedHash = lastHash.startsWith("0x")
+            ? (lastHash as `0x${string}`)
+            : (`0x${lastHash}` as `0x${string}`);
 
-          // Call success callback for both revoke and edit operations
-          if (pendingTxHash) {
+          setStatus({
+            status: "PENDING",
+            message: "Waiting for confirmations...",
+          });
+
+          setTimeout(() => {
+            setPendingTxHash(formattedHash);
+            setCurrentTxHash(formattedHash);
+          }, 100);
+
+          // Wait for all to confirm
+          setTimeout(async () => {
+            setStatus({
+              status: "CONFIRMED",
+              hash: formattedHash,
+              message: "All transactions confirmed successfully",
+            });
+            setLastTxHash(formattedHash);
+
+            // Call success callback with correct count
+            console.log('[DEBUG Farcaster] isRevokeOperation:', isRevokeOperation, 'onRevokeSuccess:', !!onRevokeSuccess, 'revokeCount:', revokeCount);
             if (isRevokeOperation && onRevokeSuccess) {
-              console.log("🎉 Calling revoke success callback for Farcaster");
-              onRevokeSuccess(1, getChainName(targetChainId || currentChainId));
+              console.log('[DEBUG Farcaster] Calling onRevokeSuccess with count:', revokeCount);
+              await onRevokeSuccess(revokeCount, getChainName(targetChainId || currentChainId));
             } else if (!isRevokeOperation && onEditSuccess) {
-              console.log("🎉 Calling edit success callback for Farcaster");
               onEditSuccess(
-                pendingTxHash,
+                formattedHash,
                 getChainName(targetChainId || currentChainId)
               );
+            } else {
+              console.log('[DEBUG Farcaster] No callback executed!');
             }
-          }
 
-          // Clear pending hash
-          setPendingTxHash(undefined);
-          setCurrentTxHash(undefined);
-        }, 3000); // Wait 3 seconds for transaction to be processed
+            setPendingTxHash(undefined);
+            setCurrentTxHash(undefined);
+          }, 3000);
+        }
       } else {
-        console.log("🔍 Using Wagmi sendCalls for non-Farcaster connector");
         // Use Wagmi's sendCalls for other connectors
-        console.log("🔍 About to call sendCalls with calls:", calls);
-        console.log("🔍 sendCalls function:", sendCalls);
-
-        // Call sendCalls mutation
         await sendCalls({ calls });
-        console.log("🔍 sendCalls mutation called");
       }
 
       // The result will be handled by useEffect hooks
@@ -548,9 +532,7 @@ export function useRevoke(
       ];
 
       // Check wallet connection before proceeding
-      // For Farcaster Mini Apps, use address instead of isConnected
       if (!address) {
-        console.error("❌ setAllowance: Wallet not connected - no address");
         setStatus({
           status: "FAILED",
           error: "Wallet not connected. Please connect your wallet first.",
@@ -559,7 +541,6 @@ export function useRevoke(
       }
 
       if (!connector) {
-        console.error("❌ setAllowance: No wallet connector found");
         setStatus({
           status: "FAILED",
           error:
@@ -568,17 +549,11 @@ export function useRevoke(
         return;
       }
 
-      console.log(
-        "✅ setAllowance: Wallet connection verified - address:",
-        address
-      );
-
       // Check if we're using Farcaster connector
       const isFarcasterConnector =
         connector?.id === "farcaster" || connector?.type === "farcasterFrame";
 
       if (isFarcasterConnector) {
-        console.log("🔍 setAllowance: Using Farcaster SDK for transaction");
         // Use Farcaster SDK directly for Farcaster Mini Apps
         const provider = await sdk.wallet.getEthereumProvider();
         if (!provider) {
@@ -587,7 +562,6 @@ export function useRevoke(
 
         // Send each call individually using Farcaster SDK
         for (const call of calls) {
-          console.log("🔍 setAllowance: Sending call via Farcaster SDK:", call);
           const txHash = await provider.request({
             method: "eth_sendTransaction",
             params: [
@@ -599,9 +573,7 @@ export function useRevoke(
               },
             ],
           });
-          console.log("🔍 setAllowance: Farcaster transaction hash:", txHash);
 
-          // Set the transaction hash for tracking
           if (txHash) {
             const formattedHash = txHash.startsWith("0x")
               ? (txHash as `0x${string}`)
@@ -613,10 +585,6 @@ export function useRevoke(
             });
 
             setTimeout(() => {
-              console.log(
-                "🔍 setAllowance: Setting pendingTxHash to:",
-                formattedHash
-              );
               setPendingTxHash(formattedHash);
               setCurrentTxHash(formattedHash);
             }, 100);
@@ -625,9 +593,6 @@ export function useRevoke(
 
         // For Farcaster SDK, we need to manually call the success callback
         setTimeout(async () => {
-          console.log(
-            "🎉 setAllowance: Farcaster transaction completed, calling success callback"
-          );
           setStatus({
             status: "CONFIRMED",
             hash: pendingTxHash,
@@ -635,28 +600,19 @@ export function useRevoke(
           });
           setLastTxHash(pendingTxHash);
 
-          // Call success callback for edit operations
           if (pendingTxHash && !isRevokeOperation && onEditSuccess) {
-            console.log(
-              "🎉 setAllowance: Calling edit success callback for Farcaster"
-            );
             onEditSuccess(
               pendingTxHash,
               getChainName(targetChainId || currentChainId)
             );
           }
 
-          // Clear pending hash
           setPendingTxHash(undefined);
           setCurrentTxHash(undefined);
-        }, 3000); // Wait 3 seconds for transaction to be processed
+        }, 3000);
       } else {
-        console.log(
-          "🔍 setAllowance: Using Wagmi sendCalls for non-Farcaster connector"
-        );
         // Call sendCalls mutation
         await sendCalls({ calls });
-        console.log("🔍 setAllowance sendCalls mutation called");
       }
 
       // The result will be handled by useEffect hooks

@@ -5,11 +5,19 @@
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
+  --primary: #4f46e5; /* indigo-600 */
+  --primary-hover: #4338ca; /* indigo-700 */
+  --border: #e5e7eb; /* gray-200 */
+  --card-bg: #ffffff;
 }
 
 .dark {
   --background: #000000;
   --foreground: #f8fafc;
+  --primary: #4f46e5; /* indigo-600 */
+  --primary-hover: #4338ca; /* indigo-700 */
+  --border: #1f2937; /* gray-800 */
+  --card-bg: #111827; /* gray-900 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -184,9 +192,9 @@ input[type="checkbox"]:checked::after {
   animation: slideUp 0.3s ease-out;
 }
 
-/* Custom components */
+/* Custom components - Clean, no gradients */
 .btn-primary {
-  background-color: #6F3CC2;
+  background-color: #4f46e5; /* indigo-600 */
   color: white;
   font-weight: 500;
   padding: 0.75rem 1.5rem;
@@ -199,7 +207,7 @@ input[type="checkbox"]:checked::after {
 }
 
 .btn-primary:hover {
-  background-color: #6F3CC2;
+  background-color: #4338ca; /* indigo-700 */
 }
 
 .btn-secondary {
@@ -255,8 +263,8 @@ input[type="checkbox"]:checked::after {
 
 .input:focus {
   outline: none;
-  border-color: #6F3CC2;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #4f46e5; /* indigo-600 */
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 /* Mobile-first responsive utilities */
