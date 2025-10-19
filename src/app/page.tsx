@@ -13,6 +13,7 @@ import { WalletChainSelector } from "@/components/WalletChainSelector";
 import { TokenApprovalsTable } from "@/components/TokenApprovalsTable";
 import { Pagination } from "@/components/Pagination";
 import { SuccessModal } from "@/components/modals/SuccessModal";
+import { OtherAppsModal } from "@/components/modals/OtherAppsModal";
 import { LoadingState } from "@/components/states/LoadingState";
 import { EmptyState } from "@/components/states/EmptyState";
 import { ScanButton } from "@/components/ScanButton";
@@ -52,23 +53,22 @@ export default function HomePage() {
   const [inputError, setInputError] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [showAppsModal, setShowAppsModal] = useState<boolean>(false);
   const [lastRevokeCount, setLastRevokeCount] = useState<number>(0);
   const [lastRevokeChain, setLastRevokeChain] = useState<string>("");
 
-  const { triggerAutoScan } = useAutoScan({ 
+  const { triggerAutoScan } = useAutoScan({
     refetch,
-    delay: 1000 
+    delay: 1000,
   });
 
   const { revoke, setAllowance, status, transactionHash, isRevoking } =
     useRevoke(
       selectedChainId,
       async (count, chainName) => {
-        console.log('[DEBUG page.tsx] onRevokeSuccess called! count:', count, 'chain:', chainName);
         setLastRevokeCount(count);
         setLastRevokeChain(chainName);
 
-        console.log('[DEBUG page.tsx] Setting showShareModal to true, count > 0?', count > 0);
         if (count > 0) {
           setShowShareModal(true);
         }
@@ -243,7 +243,9 @@ export default function HomePage() {
   const handleComposeCast = async () => {
     try {
       const chainName = getChainName(selectedChainId);
-      const text = `Just secured my wallet by revoking ${lastRevokeCount} token approval${lastRevokeCount > 1 ? "s" : ""} on ${chainName}! 
+      const text = `Just secured my wallet by revoking ${lastRevokeCount} token approval${
+        lastRevokeCount > 1 ? "s" : ""
+      } on ${chainName}! 
 
 Using @fRevoke to keep my crypto safe 🛡️
 
@@ -489,7 +491,7 @@ Using @fRevoke to keep my crypto safe 🛡️
       </header>
 
       {/* Main Content */}
-      <main className="p-2">
+      <main className="p-2 pb-16">
         {/* Connect Button */}
         {!isWalletConnected && (
           <div className="text-center mb-8">
@@ -666,7 +668,23 @@ Using @fRevoke to keep my crypto safe 🛡️
           chainName={lastRevokeChain}
           onShare={handleComposeCast}
         />
+
+        {/* Other Apps Modal */}
+        <OtherAppsModal
+          isOpen={showAppsModal}
+          onClose={() => setShowAppsModal(false)}
+        />
       </main>
+
+      {/* Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-2 px-4 z-40">
+        <button
+          onClick={() => setShowAppsModal(true)}
+          className="w-full text-center text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
+        >
+          Other Apps
+        </button>
+      </footer>
     </div>
   );
 }

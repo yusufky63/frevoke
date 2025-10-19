@@ -323,6 +323,7 @@ export function useRevoke(
 
         // Send each call individually and wait for all
         const txHashes: string[] = [];
+        const finalRevokeCount = revokeCount; // Capture count in closure
         for (let i = 0; i < calls.length; i++) {
           const call = calls[i];
           setStatus({
@@ -377,18 +378,14 @@ export function useRevoke(
             });
             setLastTxHash(formattedHash);
 
-            // Call success callback with correct count
-            console.log('[DEBUG Farcaster] isRevokeOperation:', isRevokeOperation, 'onRevokeSuccess:', !!onRevokeSuccess, 'revokeCount:', revokeCount);
+            // Call success callback with correct count (use captured variable)
             if (isRevokeOperation && onRevokeSuccess) {
-              console.log('[DEBUG Farcaster] Calling onRevokeSuccess with count:', revokeCount);
-              await onRevokeSuccess(revokeCount, getChainName(targetChainId || currentChainId));
+              await onRevokeSuccess(finalRevokeCount, getChainName(targetChainId || currentChainId));
             } else if (!isRevokeOperation && onEditSuccess) {
               onEditSuccess(
                 formattedHash,
                 getChainName(targetChainId || currentChainId)
               );
-            } else {
-              console.log('[DEBUG Farcaster] No callback executed!');
             }
 
             setPendingTxHash(undefined);
