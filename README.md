@@ -1,87 +1,64 @@
 # Frevoke
 
-Frevoke is a Base-focused token approval inspection and revoke tool built as a mobile-first Farcaster Mini App.
+Frevoke is a Base approval revoke mini app for inspecting token approvals and revoking risky allowances from a compact Farcaster-ready interface.
 
-## Snapshot
+The app focuses on a simple security utility: connect a wallet, fetch approvals, review spender/allowance context, and submit revoke transactions.
 
-- **Category:** Base token approval revoke mini app
-- **Status:** Public repository
-- **Live:** https://frevoke.vercel.app
-- **Repository:** https://github.com/yusufky63/frevoke
-- **Portfolio:** https://codexsha.dev
+## Features
 
-## Product Scope
+- Base token approval inspection.
+- Approval revoke transaction flow.
+- Blockscout/API-backed approval lookup path.
+- Farcaster Mini App and Base mobile-friendly UX.
+- Static export/deployment notes for simple hosting.
 
-Frevoke is documented here as a product repository, not just a code dump. The goal of this README is to make the product purpose, runtime surface, and development path clear for future review and maintenance.
-
-## Core Capabilities
-
-- Token approval inspection
-- Approval revoke transaction flow
-- Base Blockscout data integration
-- Mobile-first Farcaster interface
-- No persistent backend requirement for the core flow
-
-## Existing README Coverage Preserved
-
-This refresh keeps the important project-specific areas from the previous documentation:
-
-- Features
-- Tech Stack
-- Getting Started
-- Environment Variables
-- Usage
-- API Endpoints
-- /api/approvals
-- /manifest.json
-- Deployment
-
-## Tech Stack
-
-- Next.js
-- OnchainKit
-- Farcaster SDK
-- Wagmi
-- Viem
-- Axios
-- Blockscout
-
-## Repository Map
-
-| Path | Purpose |
+| Layer | Tools |
 | --- | --- |
-| src/app/api/approvals | Approval lookup endpoint |
-| src/app/manifest.json | Mini app manifest route |
-| src/components/ | Approval and wallet UI |
-| public/assets/ | Chain and app assets |
+| Frontend | Next.js, React, TypeScript, Tailwind CSS, Heroicons |
+| Base/Web3 | OnchainKit, Wagmi, Viem |
+| Farcaster | Farcaster frame SDK, Mini App SDK, Mini App Wagmi Connector |
+| Data | Axios, React Query, Blockscout-oriented approval requests |
 
-## Local Development
+## Getting Started
+
+```bash
+npm install
+cp .env.local.example .env.local
+npm run dev
+```
+
+## Environment
+
+Use `.env.local.example` when present and keep environment-specific values out of commits.
+
+- `NEXT_PUBLIC_URL`
+- `NEXT_PUBLIC_ONCHAINKIT_API_KEY`
+- `NEXT_PUBLIC_WC_PROJECT_ID`
 
 | Command | Purpose |
 | --- | --- |
-| npm run dev | Run development server |
-| npm run build | Build production app |
-| npm run start | Start production server |
-| npm run lint | Run lint checks |
+| `npm run dev` | Start local development. |
+| `npm run build` | Build the app. |
+| `npm start` | Run the production server. |
+| `npm run lint` | Run lint checks. |
 
-## Environment Notes
+## API Endpoints
 
-Use local environment files for secrets and deployment-specific values. Do not commit real keys.
+### `/api/approvals`
 
-- Blockscout/API endpoints
-- Wallet connector configuration
-- Farcaster mini app metadata
+Fetches approval data for the connected wallet/address so the UI can display spender, token, and allowance context before a revoke action.
 
-## Operational Notes
+### `/manifest.json`
 
-- Keep this README aligned with the live product and portfolio copy.
-- Prefer small, documented changes over large undocumented rewrites.
-- The old README had useful endpoint notes; this version keeps those concepts while tightening the layout.
+Serves Farcaster/mini app metadata for platform discovery and embedding.
 
-## Maintainer
+## Deployment
 
-Built by Yusuf / Codexsha.
+- Vercel/Next deployment for dynamic routes and API usage.
+- Static export can be used when the API strategy is moved to an external provider.
+- Farcaster embedding headers and metadata must remain aligned with the production domain.
 
-- GitHub: https://github.com/yusufky63
-- X: https://x.com/codexsha
-- Telegram: https://t.me/codexsha
+## Status
+
+- Repository: https://github.com/yusufky63/frevoke
+- Live app: https://frevoke.vercel.app
