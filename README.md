@@ -1,28 +1,42 @@
 # Frevoke
 
-![Category](https://img.shields.io/badge/Category-Security%20Utility%20%2F%20Base-1f1f1f?style=flat-square&labelColor=141414&color=2b2b2b) ![Status](https://img.shields.io/badge/Status-public-1f1f1f?style=flat-square&labelColor=141414&color=2b2b2b)
+Frevoke is a Base-focused token approval inspection and revoke tool built as a mobile-first Farcaster Mini App.
 
-Base token approval revoke mini app for inspecting and revoking approvals from a mobile-first UI.
+## Snapshot
 
-## Links
+- **Category:** Base token approval revoke mini app
+- **Status:** Public repository
+- **Live:** https://frevoke.vercel.app
+- **Repository:** https://github.com/yusufky63/frevoke
+- **Portfolio:** https://codexsha.dev
 
-- Live: https://frevoke.vercel.app
-- Repository: https://github.com/yusufky63/frevoke
-- Portfolio: https://codexsha.dev
+## Product Scope
 
-## Overview
+Frevoke is documented here as a product repository, not just a code dump. The goal of this README is to make the product purpose, runtime surface, and development path clear for future review and maintenance.
 
-Frevoke is part of the Codexsha product portfolio. The project is focused on shipping a compact, usable product surface rather than a demo-only prototype. This README is written to make the repository easier to understand, run, and evaluate.
-
-## Key Features
+## Core Capabilities
 
 - Token approval inspection
 - Approval revoke transaction flow
 - Base Blockscout data integration
 - Mobile-first Farcaster interface
-- No persistent backend requirement
+- No persistent backend requirement for the core flow
 
-## Stack
+## Existing README Coverage Preserved
+
+This refresh keeps the important project-specific areas from the previous documentation:
+
+- Features
+- Tech Stack
+- Getting Started
+- Environment Variables
+- Usage
+- API Endpoints
+- /api/approvals
+- /manifest.json
+- Deployment
+
+## Tech Stack
 
 - Next.js
 - OnchainKit
@@ -32,33 +46,37 @@ Frevoke is part of the Codexsha product portfolio. The project is focused on shi
 - Axios
 - Blockscout
 
-## Role / Ownership
+## Repository Map
 
-Built the approval inspection UI, revoke transaction flow, wallet integration, and Base-focused utility experience.
+| Path | Purpose |
+| --- | --- |
+| src/app/api/approvals | Approval lookup endpoint |
+| src/app/manifest.json | Mini app manifest route |
+| src/components/ | Approval and wallet UI |
+| public/assets/ | Chain and app assets |
 
-## Getting Started
+## Local Development
 
-```bash
-npm install
-npm run dev
-npm run build
-```
+| Command | Purpose |
+| --- | --- |
+| npm run dev | Run development server |
+| npm run build | Build production app |
+| npm run start | Start production server |
+| npm run lint | Run lint checks |
 
-## Environment
+## Environment Notes
 
-Create a local environment file from the project conventions and configure only the values needed for the flow you are running. Do not commit secrets.
-
-Typical values used by this project include:
+Use local environment files for secrets and deployment-specific values. Do not commit real keys.
 
 - Blockscout/API endpoints
-- wallet connector configuration
+- Wallet connector configuration
 - Farcaster mini app metadata
 
-## Project Notes
+## Operational Notes
 
-- Status: Public repository and live deployment.
-- Private or sensitive implementation details are intentionally not documented in public-facing copy.
-- The README should stay aligned with the live product and the Codexsha portfolio page.
+- Keep this README aligned with the live product and portfolio copy.
+- Prefer small, documented changes over large undocumented rewrites.
+- The old README had useful endpoint notes; this version keeps those concepts while tightening the layout.
 
 ## Maintainer
 
